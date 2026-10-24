@@ -41,7 +41,7 @@ export default function Host() {
   return (
     <div className="host">
       <header className="host-bar">
-        <span className="logo">나훗</span>
+        <span className="logo">도훗</span>
         {game.state !== 'lobby' && <span className="pin-chip">PIN {pin}</span>}
         {isMock && <span className="mock-chip">로컬 테스트 모드</span>}
         <button className="ghost" onClick={startNewGame}>새 게임</button>
@@ -231,7 +231,6 @@ function QuestionStage({ pin, game }) {
         )}
       </div>
 
-      {isReveal && <p className="comment">{question.comment}</p>}
 
       <div className={`options count-${question.options.length}`}>
         {question.options.map((opt, i) => (
@@ -313,7 +312,6 @@ function Final({ pin, game }) {
             <p className="last-label">😇 나를 제일 모르는 사람</p>
             <p className="last-name">{last.name}</p>
             <p className="last-score">{last.score.toLocaleString()}점</p>
-            <p className="muted">끝나고 저랑 대화 좀 해요…</p>
           </div>
         </div>
       )}

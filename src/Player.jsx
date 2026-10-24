@@ -15,7 +15,7 @@ function PinEntry({ onSubmit }) {
   const [value, setValue] = useState('')
   return (
     <div className="player center">
-      <h1 className="logo big">나훗</h1>
+      <h1 className="logo big">도훗</h1>
       <form
         className="join-form"
         onSubmit={(e) => {
@@ -82,7 +82,7 @@ function NameEntry({ pin, pid, pidKey }) {
   }
   return (
     <div className="player center">
-      <h1 className="logo big">나훗</h1>
+      <h1 className="logo big">도훗</h1>
       <form className="join-form" onSubmit={join}>
         <input
           placeholder="닉네임"
@@ -158,7 +158,6 @@ function PlayerBody({ pin, pid, game, me }) {
           {last.correct ? '정답!' : last.answered ? '땡!' : '시간 초과'}
         </p>
         {last.correct && <p className="points">+{last.points.toLocaleString()}</p>}
-        {!last.correct && <p className="muted">저에 대해 더 알아가 주세요…</p>}
       </div>
     )
   }
@@ -181,7 +180,7 @@ function PlayerBody({ pin, pid, game, me }) {
       <p className="status-big">{rank === 1 ? '👑' : rank <= 3 ? '🏅' : isLast ? '😇' : '🙌'}</p>
       <p className="status-title">{rank}등</p>
       <p className="muted">
-        {isLast ? '나를 제일 모르는 사람… 끝나고 대화 좀 해요' : `${ranked.length}명 중 ${rank}등`}
+        {isLast ? '나를 제일 모르는 사람' : `${ranked.length}명 중 ${rank}등`}
       </p>
       <p className="points">{(me.score || 0).toLocaleString()}점</p>
     </div>
