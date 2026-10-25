@@ -29,8 +29,20 @@ export default function Host() {
     })
   }, [pin])
 
+  // 브라우저 확인 창은 막히는 환경이 있어서, 3초 안에 두 번 누르면 새 게임
+  const [confirming, setConfirming] = useState(false)
+  useEffect(() => {
+    if (!confirming) return
+    const id = setTimeout(() => setConfirming(false), 3000)
+    return () => clearTimeout(id)
+  }, [confirming])
+
   const startNewGame = () => {
-    if (!window.confirm('새 게임을 시작할까요? 지금 참가자와 점수는 사라져요.')) return
+    if (!confirming) {
+      setConfirming(true)
+      return
+    }
+    setConfirming(false)
     const p = newPin()
     storage.set(PIN_KEY, p)
     setPin(p)
@@ -44,7 +56,9 @@ export default function Host() {
         <span className="logo">도훗</span>
         {game.state !== 'lobby' && <span className="pin-chip">PIN {pin}</span>}
         {isMock && <span className="mock-chip">로컬 테스트 모드</span>}
-        <button className="ghost" onClick={startNewGame}>새 게임</button>
+        <button className={`ghost ${confirming ? 'confirming' : ''}`} onClick={startNewGame}>
+          {confirming ? '한 번 더 누르면 새 게임' : '새 게임'}
+        </button>
       </header>
       {game.state === 'lobby' && <Lobby pin={pin} game={game} />}
       {/* 문제마다 새로 마운트해서 타이머가 이전 문제 값을 물려받지 않게 한다 */}

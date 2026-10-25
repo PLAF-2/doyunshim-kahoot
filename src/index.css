@@ -38,6 +38,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .host { min-height: 100%; display: flex; flex-direction: column; }
 .host-bar { display: flex; align-items: center; gap: 12px; padding: 14px 2.5vw; }
 .host-bar .ghost { margin-left: auto; font-size: 14px; opacity: 0.6; }
+.host-bar .ghost.confirming { opacity: 1; background: #ff9f1c; color: #2b1300; }
 .pin-chip, .mock-chip, .double-chip, .label-chip {
   padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 15px; background: rgba(0, 0, 0, 0.25);
 }

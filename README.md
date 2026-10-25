@@ -4,6 +4,8 @@
 
 PLAF 2기 **This is ME Project**. 저(doyunshim)에 대한 문제만 나오는 카훗 스타일 실시간 퀴즈예요.
 
+🔗 **배포 링크**: https://dohoot.vercel.app (발표 화면: https://dohoot.vercel.app/host)
+
 ## 사용법
 - **발표 화면**: `/host` 에 접속하면 QR 코드와 PIN 이 떠요.
 - **참가자**: QR 을 찍거나 사이트에 접속해 PIN 과 닉네임을 입력해요.
