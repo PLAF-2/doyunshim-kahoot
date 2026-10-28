@@ -66,6 +66,7 @@ export default function Host() {
         <QuestionStage key={game.q} pin={pin} game={game} />
       )}
       {game.state === 'final' && <Final pin={pin} game={game} />}
+      {game.state === 'compare' && <Compare game={game} />}
     </div>
   )
 }
@@ -292,8 +293,9 @@ function Final({ pin, game }) {
 
   const next = useCallback(() => {
     if (!done) patch(`games/${pin}`, { step: step + 1 })
+    else patch(`games/${pin}`, { state: 'compare' })
   }, [pin, step, done])
-  useSpaceKey(done ? null : next)
+  useSpaceKey(next)
 
   const last = ranked.at(-1)
   const showLast = current === 'last'
@@ -338,11 +340,49 @@ function Final({ pin, game }) {
         </div>
       )}
 
-      {!done && (
-        <button className="primary corner" onClick={next}>
-          {step === 0 ? `${steps[0]}등 공개` : steps[step] === 'last' ? '꼴등 공개 😇' : `${steps[step]}등 공개`}
-        </button>
-      )}
+      <button className="primary corner" onClick={next}>
+        {done
+          ? '당신들이 선택한 나의 모습 vs 진짜 나 ▶'
+          : step === 0 ? `${steps[0]}등 공개` : steps[step] === 'last' ? '꼴등 공개 😇' : `${steps[step]}등 공개`}
+      </button>
+    </main>
+  )
+}
+
+// 문제마다 가장 많이 고른 보기(동점이면 앞 보기)를 실제 정답과 나란히 보여준다
+function Compare({ game }) {
+  const rows = questions.map((question, q) => {
+    const counts = question.options.map(
+      (_, i) => Object.values(game.answers?.[q] || {}).filter((a) => a.choice === i).length,
+    )
+    const max = Math.max(...counts)
+    const picked = max > 0 ? counts.indexOf(max) : -1
+    return { question, picked, same: picked === question.answer }
+  })
+  const sameCount = rows.filter((r) => r.same).length
+
+  return (
+    <main className="compare">
+      <h1 className="title">당신들이 선택한 나의 모습 vs 진짜 나</h1>
+      <div className="compare-table">
+        <div className="compare-head">
+          <span />
+          <span>당신들이 선택한 나의 모습</span>
+          <span>진짜 나</span>
+        </div>
+        {rows.map(({ question, picked, same }, q) => (
+          <div key={q} className={`compare-row ${same ? 'same' : 'diff'}`} style={{ animationDelay: `${q * 0.25}s` }}>
+            <span className="compare-label">{question.short}</span>
+            <span className="compare-picked">{picked >= 0 ? question.options[picked] : '-'}</span>
+            <span className="compare-real">
+              {question.options[question.answer]} <b>{same ? '⭕' : '❌'}</b>
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="compare-summary">
+        {rows.length}개 중 <b>{sameCount}개</b>가 진짜 나와 같았어요
+      </p>
     </main>
   )
 }
