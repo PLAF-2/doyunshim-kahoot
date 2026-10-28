@@ -66,7 +66,8 @@ export default function Host() {
         <QuestionStage key={game.q} pin={pin} game={game} />
       )}
       {game.state === 'final' && <Final pin={pin} game={game} />}
-      {game.state === 'compare' && <Compare game={game} />}
+      {game.state === 'compare' && <Compare pin={pin} game={game} />}
+      {game.state === 'everyone' && <Everyone game={game} />}
     </div>
   )
 }
@@ -350,7 +351,10 @@ function Final({ pin, game }) {
 }
 
 // 문제마다 가장 많이 고른 보기(동점이면 앞 보기)를 실제 정답과 나란히 보여준다
-function Compare({ game }) {
+function Compare({ pin, game }) {
+  const next = useCallback(() => patch(`games/${pin}`, { state: 'everyone' }), [pin])
+  useSpaceKey(next)
+
   const rows = questions.map((question, q) => {
     const counts = question.options.map(
       (_, i) => Object.values(game.answers?.[q] || {}).filter((a) => a.choice === i).length,
@@ -383,6 +387,51 @@ function Compare({ game }) {
       <p className="compare-summary">
         {rows.length}개 중 <b>{sameCount}개</b>가 진짜 나와 같았어요
       </p>
+      <button className="primary corner" onClick={next}>
+        모두의 선택 ▶
+      </button>
+    </main>
+  )
+}
+
+// 참가자마다 세로 카드 한 장: 이름 아래로 문제별 O/X 와 고른 답
+function Everyone({ game }) {
+  const ranked = rankPlayers(game.players)
+  const label = (question, i) => (question.shortOptions || question.options)[i]
+
+  return (
+    <main className="everyone">
+      <h1 className="title">모두의 선택</h1>
+      <div className="everyone-board">
+        <div className="ev-col ev-labels">
+          <div className="ev-head" />
+          {questions.map((question, q) => (
+            <div key={q} className="ev-cell">{question.short}</div>
+          ))}
+        </div>
+        <div className="ev-col ev-answer">
+          <div className="ev-head">정답</div>
+          {questions.map((question, q) => (
+            <div key={q} className="ev-cell">{label(question, question.answer)}</div>
+          ))}
+        </div>
+        {ranked.map((p) => (
+          <div key={p.id} className="ev-col ev-player">
+            <div className="ev-head">{p.name}</div>
+            {questions.map((question, q) => {
+              const a = game.answers?.[q]?.[p.id]
+              if (!a) return <div key={q} className="ev-cell none">-</div>
+              const ok = a.choice === question.answer
+              return (
+                <div key={q} className="ev-cell">
+                  <span className={`ev-mark ${ok ? 'o' : 'x'}`}>{ok ? 'O' : 'X'}</span>
+                  <span className="ev-pick">{label(question, a.choice)}</span>
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
     </main>
   )
 }

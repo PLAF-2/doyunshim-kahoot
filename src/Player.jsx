@@ -86,7 +86,7 @@ function NameEntry({ pin, pid, pidKey }) {
       <form className="join-form" onSubmit={join}>
         <input
           placeholder="닉네임"
-          maxLength={12}
+          maxLength={6}
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoFocus

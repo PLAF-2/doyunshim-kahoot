@@ -1,4 +1,4 @@
-// 퀴즈 문제. answer 는 options 의 인덱스(0부터 시작), short 는 마지막 비교 화면에 쓰는 이름
+// 퀴즈 문제. answer 는 options 의 인덱스(0부터 시작), short·shortOptions 는 마지막 결과 화면에 쓰는 짧은 이름
 export const TIME_LIMIT = 15
 
 export const questions = [
@@ -25,6 +25,7 @@ export const questions = [
     text: '지난 1년 동안 제가 배달음식에 쓴 금액은?',
     short: '1년 배달비',
     options: ['120만 원', '320만 원', '520만 원', '1200만 원'],
+    shortOptions: ['120만', '320만', '520만', '1200만'],
     answer: 1,
   },
   {
@@ -36,6 +37,7 @@ export const questions = [
       '이번 학기에 수업을 한 번도 빠지지 않았다',
       '최근 들어 살이 3kg 쪘다',
     ],
+    shortOptions: ['PLAF', '수업', '3kg'],
     answer: 1,
     double: true,
   },
