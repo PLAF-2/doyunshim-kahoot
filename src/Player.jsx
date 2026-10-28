@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { listen, write, patch, stamp, storage } from './realtime'
-import { rounds, START_BALANCE, MIN_BET, COLORS, coin, tally, fmtOdds } from './rounds'
+import { listen, write, stamp, storage } from './realtime'
+import { questions, COLORS, SHAPES } from './questions'
 import { rankPlayers, finalSteps } from './ranking'
 
 const randomId = () => Math.random().toString(36).slice(2, 10)
@@ -60,7 +60,7 @@ function Game({ pin, onLeave }) {
     <div className="player">
       <header className="player-bar">
         <span className="player-name">{me.name}</span>
-        <span className="player-score">{coin(me.balance ?? START_BALANCE)}</span>
+        <span className="player-score">{(me.score || 0).toLocaleString()}점</span>
       </header>
       <PlayerBody pin={pin} pid={pid} game={game} me={me} />
     </div>
@@ -78,7 +78,7 @@ function NameEntry({ pin, pid, pidKey }) {
     const trimmed = name.trim()
     if (!trimmed) return
     storage.set(pidKey, pid, true)
-    write(`games/${pin}/players/${pid}`, { name: trimmed, balance: START_BALANCE, joinedAt: stamp() })
+    write(`games/${pin}/players/${pid}`, { name: trimmed, score: 0, joinedAt: stamp() })
   }
   return (
     <div className="player center">
@@ -97,168 +97,96 @@ function NameEntry({ pin, pid, pidKey }) {
   )
 }
 
-function Center({ icon, title, children, className = '' }) {
-  return (
-    <div className={`player-center ${className}`}>
-      {icon && <p className="status-big">{icon}</p>}
-      {title && <p className="status-title">{title}</p>}
-      {children}
-    </div>
-  )
-}
-
-function BetSummary({ round, bet }) {
-  if (!bet) return null
-  return (
-    <p className="bet-summary">
-      <b>{round.options[bet.choice]}</b>에 {coin(bet.amount)}
-    </p>
-  )
-}
-
 function PlayerBody({ pin, pid, game, me }) {
-  const r = game.r
-  const round = rounds[r]
-  const myBet = game.bets?.[r]?.[pid]
-  const balance = me.balance ?? START_BALANCE
+  const q = game.q
+  const question = questions[q]
+  const myAnswer = game.answers?.[q]?.[pid]
 
   if (game.state === 'lobby')
     return (
-      <Center icon="✅" title="입장 완료!">
-        <p className="muted">기본금 {coin(START_BALANCE)}으로 시작해요</p>
+      <div className="player-center">
+        <p className="status-big">✅</p>
+        <p className="status-title">입장 완료!</p>
         <p className="muted">화면을 봐주세요. 곧 시작해요</p>
-      </Center>
+      </div>
     )
 
-  if (game.state === 'betting') {
-    const loaned = me.loanR === r
-    if (myBet)
+  if (game.state === 'question') {
+    if (myAnswer)
       return (
-        <Center icon="🎲" title="베팅 완료!">
-          <BetSummary round={round} bet={myBet} />
-          <p className="muted">마감까지 기다려주세요</p>
-        </Center>
-      )
-    if (balance < MIN_BET)
-      return (
-        <Center icon="💸" title="파산!">
-          <p className="muted">잔액이 최소 베팅 {coin(MIN_BET)}보다 적어요</p>
-          <button
-            className="loan-button"
-            onClick={() =>
-              patch(`games/${pin}/players/${pid}`, { balance: MIN_BET, loans: (me.loans || 0) + 1, loanR: r })
-            }
-          >
-            🏦 대출 {coin(MIN_BET)}
-          </button>
-        </Center>
+        <div className="player-center">
+          <p className="status-big">⏳</p>
+          <p className="status-title">제출 완료!</p>
+          <p className="muted">두근두근… 다른 사람들을 기다리는 중</p>
+        </div>
       )
     return (
-      <BetForm key={r} pin={pin} pid={pid} r={r} round={round} balance={balance} loaned={loaned} bets={game.bets?.[r]} />
+      <div className="player-question">
+        <p className="player-q-text">
+          {q + 1}. {question.text}
+          {question.double && <span className="double-chip small">🔥 2배</span>}
+        </p>
+        <div className={`player-options count-${question.options.length}`}>
+          {question.options.map((opt, i) => (
+            <button
+              key={i}
+              className="player-option"
+              style={{ background: COLORS[i] }}
+              onClick={() => write(`games/${pin}/answers/${q}/${pid}`, { choice: i, at: stamp() })}
+            >
+              <span className="shape">{SHAPES[i]}</span>
+              <span>{opt}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     )
   }
 
-  if (game.state === 'play')
-    return (
-      <Center icon="👀" title="베팅 마감!">
-        {myBet ? (
-          <BetSummary round={round} bet={myBet} />
-        ) : (
-          <p className="muted">이번 판은 베팅하지 않아서 {coin(MIN_BET)}이 몰수돼요</p>
-        )}
-        <p className="muted">화면을 봐주세요</p>
-      </Center>
-    )
-
-  if (game.state === 'result') {
-    const last = me.last?.r === r ? me.last : null
-    if (!last) return <Center title="다음 판부터 참여해요" />
-    if (last.refund)
+  if (game.state === 'reveal') {
+    const last = me.last?.q === q ? me.last : null
+    if (!last)
       return (
-        <Center icon="↩️" title="전액 환불">
-          <p className="muted">아무도 못 맞혀서 건 금액을 돌려받았어요</p>
-        </Center>
-      )
-    if (last.missed)
-      return (
-        <Center icon="⏰" title="미참여" className="result bad">
-          <p className="points">-{coin(-last.delta)}</p>
-        </Center>
+        <div className="player-center">
+          <p className="status-title">다음 문제부터 참여해요</p>
+        </div>
       )
     return (
-      <Center icon={last.win ? '🎉' : '💸'} title={last.win ? '적중!' : '꽝!'} className={`result ${last.win ? 'good' : 'bad'}`}>
-        <p className="points">
-          {last.win ? '+' : '-'}
-          {coin(Math.abs(last.delta))}
+      <div className={`player-center result ${last.correct ? 'good' : 'bad'}`}>
+        <p className="status-big">{last.correct ? '⭕' : last.answered ? '❌' : '⏰'}</p>
+        <p className="status-title">
+          {last.correct ? '정답!' : last.answered ? '땡!' : '시간 초과'}
         </p>
-      </Center>
+        {last.correct && <p className="points">+{last.points.toLocaleString()}</p>}
+        {last.correct && last.streak >= 2 && (
+          <p className="combo-line">🔥 {last.streak}연속! ×{last.combo}</p>
+        )}
+        {last.broke && <p className="combo-line">💔 콤보 끊김</p>}
+      </div>
     )
   }
 
   // final
   const ranked = rankPlayers(game.players)
   const done = (game.step || 0) >= finalSteps(ranked.length).length
-  if (!done) return <Center icon="🥁" title="결과 발표 중…"><p className="muted">화면을 봐주세요</p></Center>
+  if (!done)
+    return (
+      <div className="player-center">
+        <p className="status-big">🥁</p>
+        <p className="status-title">결과 발표 중…</p>
+        <p className="muted">화면을 봐주세요</p>
+      </div>
+    )
   const rank = ranked.findIndex((p) => p.id === pid) + 1
   const isLast = ranked.length >= 4 && rank === ranked.length
   return (
-    <Center icon={rank === 1 ? '👑' : rank <= 3 ? '🏅' : isLast ? '😇' : '🙌'} title={`${rank}등`}>
-      <p className="muted">{isLast ? '나를 제일 모르는 사람' : `${ranked.length}명 중 ${rank}등`}</p>
-      <p className="points">{coin(balance)}</p>
-    </Center>
-  )
-}
-
-function BetForm({ pin, pid, r, round, balance, loaned, bets }) {
-  const [choice, setChoice] = useState(null)
-  const [amount, setAmount] = useState(MIN_BET)
-  const max = Math.max(balance, MIN_BET)
-  const clamp = (n) => Math.min(max, Math.max(MIN_BET, n))
-  const { pools, total, odds } = tally(bets, round.options.length)
-  // 내 베팅까지 더했을 때의 예상 배당 (마감 전까지 계속 바뀐다)
-  const expected = choice == null ? 0 : Math.floor((amount * (total + amount)) / (pools[choice] + amount))
-
-  const submit = () => {
-    if (choice == null) return
-    write(`games/${pin}/bets/${r}/${pid}`, { choice, amount: clamp(amount), at: stamp() })
-  }
-
-  return (
-    <div className="bet-form">
-      {loaned && <p className="loan-banner">🏦 대출 {coin(MIN_BET)}을 받았어요</p>}
-      <p className="player-q-text">
-        {r + 1}. {round.text}
+    <div className="player-center">
+      <p className="status-big">{rank === 1 ? '👑' : rank <= 3 ? '🏅' : isLast ? '😇' : '🙌'}</p>
+      <p className="status-title">{rank}등</p>
+      <p className="muted">
+        {isLast ? '나를 제일 모르는 사람' : `${ranked.length}명 중 ${rank}등`}
       </p>
-      <div className={`bet-slots count-${round.options.length}`}>
-        {round.options.map((opt, i) => (
-          <button
-            key={i}
-            className={`bet-slot ${choice === i ? 'selected' : ''} ${choice != null && choice !== i ? 'faded' : ''}`}
-            style={{ background: COLORS[i] }}
-            onClick={() => setChoice(i)}
-          >
-            <span className="bet-mult">{fmtOdds(odds[i])}</span>
-            <span className="bet-label">{opt}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="amount-box">
-        <div className="amount-row">
-          <button className="amount-step" onClick={() => setAmount((a) => clamp(a - 10))}>−</button>
-          <span className="amount">{coin(amount)}</span>
-          <button className="amount-step" onClick={() => setAmount((a) => clamp(a + 10))}>+</button>
-        </div>
-        <div className="quick-row">
-          <button onClick={() => setAmount(MIN_BET)}>최소</button>
-          <button onClick={() => setAmount(clamp(Math.floor(balance / 2)))}>절반</button>
-          <button onClick={() => setAmount(max)}>올인</button>
-        </div>
-      </div>
-
-      <button className="primary bet-submit" disabled={choice == null} onClick={submit}>
-        {choice == null ? '칸을 먼저 골라주세요' : `${coin(amount)} 걸기 · 지금 적중하면 약 ${coin(expected)}`}
-      </button>
+      <p className="points">{(me.score || 0).toLocaleString()}점</p>
     </div>
   )
 }
